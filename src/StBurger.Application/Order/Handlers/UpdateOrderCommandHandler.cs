@@ -1,10 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿namespace StBurger.Application.Order.Handlers;
 
-namespace StBurger.Application.Order.Handlers
+public sealed class UpdateOrderCommandHandler(IOrderService service) : IRequestHandler<UpdateOrderCommand, UpdateOrderResponse>
 {
-    internal class UpdateOrderCommandHandler
-    {
-    }
+    public async Task<UpdateOrderResponse> Handle
+        (UpdateOrderCommand request, 
+        CancellationToken cancellationToken) 
+        => await service.UpdateOrderAsync(request.Data, cancellationToken);
 }

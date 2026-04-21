@@ -1,9 +1,11 @@
-﻿namespace StBurger.Application.Order.Handlers;
+﻿using System.Collections.Immutable;
 
-public sealed class GetOrdersQueryHandler : IRequestHandler<GetOrdersQuery, OrdersResponse>
+namespace StBurger.Application.Order.Handlers;
+
+public sealed class GetOrdersQueryHandler(IOrderService service) : IRequestHandler<GetOrdersQuery, OrdersResponse>
 {
-    public Task<OrdersResponse> Handle(GetOrdersQuery request, CancellationToken cancellationToken)
-    {
-        throw new NotImplementedException();
-    }
+    public async Task<OrdersResponse> Handle
+        (GetOrdersQuery request, 
+        CancellationToken cancellationToken) 
+        => new([.. await service.GetAsync(cancellationToken)]);
 }

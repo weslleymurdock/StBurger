@@ -1,9 +1,9 @@
 ﻿namespace StBurger.Application.Order.Handlers;
 
-public sealed class AddOrderItemCommandHandler : IRequestHandler<AddOrderItemCommand, OrderResponse>
+public sealed class AddOrderItemCommandHandler(IOrderService service) : IRequestHandler<AddOrderItemCommand, OrderResponse>
 {
-    public Task<OrderResponse> Handle(AddOrderItemCommand request, CancellationToken cancellationToken)
-    {
-        throw new NotImplementedException();
-    }
+    public async Task<OrderResponse> Handle
+        (AddOrderItemCommand request,
+        CancellationToken cancellationToken) =>
+        await service.AddItemAsync(request.Id, request.Data.Id, cancellationToken);
 }

@@ -1,9 +1,9 @@
 ﻿namespace StBurger.Application.Order.Handlers;
 
-public sealed class CreateOrderCommandHandler : IRequestHandler<CreateOrderCommand, CreateOrderResponse>
+public sealed class CreateOrderCommandHandler(IOrderService service) : IRequestHandler<CreateOrderCommand, CreateOrderResponse>
 {
-    public Task<CreateOrderResponse> Handle(CreateOrderCommand request, CancellationToken cancellationToken)
-    {
-        throw new NotImplementedException();
-    }
+    public async Task<CreateOrderResponse> Handle
+        (CreateOrderCommand request,
+        CancellationToken cancellationToken) 
+        => await service.CreateOrderAsync(request.Data, cancellationToken);
 }
