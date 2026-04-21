@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/StBurger.App/StBurger.App.csproj" />
     <Project Path="src/StBurger.Application/StBurger.Application.csproj" />
     <Project Path="src/StBurger.Composition/StBurger.Composition.csproj" />
     <Project Path="src/StBurger.Domain/StBurger.Domain.csproj" />
