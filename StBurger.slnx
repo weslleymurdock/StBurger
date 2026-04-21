@@ -1,4 +1,7 @@
 <Solution>
+  <Folder Name="/scripts/">
+    <File Path="scripts/migrate.ps1" />
+  </Folder>
   <Folder Name="/src/">
     <Project Path="src/StBurger.App/StBurger.App.csproj" />
     <Project Path="src/StBurger.Application/StBurger.Application.csproj" />
