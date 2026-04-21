@@ -1,6 +1,10 @@
 <Solution>
+  <Folder Name="/certs/" />
   <Folder Name="/scripts/">
+    <File Path="scripts/gen-cert.ps1" />
+    <File Path="scripts/gen-cert.sh" />
     <File Path="scripts/migrate.ps1" />
+    <File Path="scripts/provision.sh" />
   </Folder>
   <Folder Name="/src/">
     <Project Path="src/StBurger.App/StBurger.App.csproj" />
@@ -9,4 +13,7 @@
     <Project Path="src/StBurger.Domain/StBurger.Domain.csproj" />
     <Project Path="src/StBurger.Infrastructure/StBurger.Infrastructure.csproj" />
   </Folder>
+  <Project Path="docker-compose.dcproj">
+    <Build />
+  </Project>
 </Solution>

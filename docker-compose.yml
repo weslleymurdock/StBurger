@@ -1,0 +1,73 @@
+services:
+  app:
+    image: ${DOCKER_REGISTRY-}stburger
+    build:
+      context: .
+      dockerfile: src/StBurger.App/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_HTTP_PORTS: 80
+      ASPNETCORE_HTTPS_PORTS: 443
+      ASPNETCORE_Kestrel__Endpoints__Https__Url: https://0.0.0.0:443
+      ConnectionStrings__DefaultConnection: Server=sqlserver;Database=${DB_NAME};User Id=${DB_USER};Password=${DB_USER_PASSWORD};TrustServerCertificate=True; 
+      ASPNETCORE_Kestrel__Endpoints__Https__Certificate__Path: /https/stburger.pfx
+      ASPNETCORE_Kestrel__Endpoints__Https__Certificate__Password: ${CERT_PASSWORD}
+    ports:
+      - "80:80"
+      - "443:443" 
+    networks:
+      - stnet
+    volumes:
+      - ./certs:/https:ro
+
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2025-latest
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_PID=Express
+      - SA_PASSWORD=${SA_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "timeout 1 bash -c '</dev/tcp/localhost/1433'"]
+      interval: 10s
+      timeout: 3s
+      retries: 20
+      start_period: 15s
+    networks:
+      - stnet
+    volumes:
+      - sqlvolume:/var/opt/mssql
+
+  sqlserver-setup:
+    image: mcr.microsoft.com/mssql-tools:latest
+    environment:
+      DBHOST: sqlserver
+      DBNAME: ${DB_NAME}
+      DBUSER: ${DB_USER}
+      DBUSER_PASSWORD: ${DB_USER_PASSWORD}
+      SA_PASSWORD: ${SA_PASSWORD}
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    entrypoint: /bin/bash -c
+    command: >
+      /bin/bash -c "cp /data/provision.sh /tmp/provision.sh &&
+        apt-get update && apt-get install -y dos2unix &&
+        dos2unix /tmp/provision.sh &&
+        chmod +x /tmp/provision.sh &&
+        /tmp/provision.sh"
+    networks:
+      - stnet
+    volumes:
+      - ./scripts/provision.sh:/data/provision.sh
+
+networks:
+  stnet:
+    driver: bridge
+
+volumes:
+  sqlvolume:
+    driver: local 
+
+secrets:
+  sql_provision_script:
+    file: ./scripts/provision.sql
