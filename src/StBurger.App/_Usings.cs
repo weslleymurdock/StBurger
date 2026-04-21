@@ -6,7 +6,6 @@ global using Microsoft.AspNetCore.Mvc;
 global using Scalar.AspNetCore;
 
 global using StBurger.App.Components;
-global using StBurger.App.Extensions;
 global using StBurger.App.Middlewares;
 global using StBurger.Application.Core.Responses;
 global using StBurger.Application.Menu.Commands;

@@ -86,7 +86,7 @@ public class MenuController(IMediator mediator) : ControllerBase
     [ProducesResponseType(typeof(BaseResponse<ProblemDetails>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(BaseResponse<ProblemDetails>), StatusCodes.Status409Conflict)]
     [ProducesResponseType(typeof(BaseResponse<ProblemDetails>), StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> PatchDescription([FromBody] s request)
+    public async Task<IActionResult> PatchDescription([FromBody] PatchMenuItemDescriptionRequest request)
     {
         var command = new PatchMenuItemDescriptionCommand(request.Id, request.Description);
         var result = await mediator.Send(command);
@@ -105,10 +105,29 @@ public class MenuController(IMediator mediator) : ControllerBase
     [ProducesResponseType(typeof(BaseResponse<ProblemDetails>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(BaseResponse<ProblemDetails>), StatusCodes.Status409Conflict)]
     [ProducesResponseType(typeof(BaseResponse<ProblemDetails>), StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> PatchName([FromRoute(Name = "id")] string id, [FromRoute(Name = "name")] string name)
+    public async Task<IActionResult> PatchName([FromBody] PatchMenuItemNameRequest request)
     {
-        var command = new PatchMenuItemNameCommand(id, name);
-        var result = await mediator.Send(command);
+        var command = new PatchMenuItemNameCommand(request.Id, request.Name);
+        _ = await mediator.Send(command);
+        return NoContent();
+    }
+     
+    /// <summary>
+    /// Atualiza o preço de um item do menu
+    /// </summary>
+    /// <param name="id">id do item</param>
+    /// <param name="price">preço do item</param>
+    /// <returns>Uma instância de <see cref="IActionResult"/> contendo status http 204 no content caso a atualização seja bem sucedida"/></returns>
+    [HttpPatch("price")]
+    [ProducesResponseType(typeof(BaseResponse), StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(BaseResponse<ProblemDetails>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(BaseResponse<ProblemDetails>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(BaseResponse<ProblemDetails>), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(typeof(BaseResponse<ProblemDetails>), StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> PatchPrice([FromBody] PatchMenuItemPriceRequest request)
+    {
+        var command = new PatchMenuItemPriceCommand(request.Id, request.Price);
+        _ = await mediator.Send(command);
         return NoContent();
     }
      

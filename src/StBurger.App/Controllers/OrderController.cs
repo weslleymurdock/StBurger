@@ -11,8 +11,25 @@ public class OrderController(IMediator mediator) : ControllerBase
     /// </summary>
     /// <param name="request">Corpo do item do Order a ser criado</param>
     /// <returns>uma response do tipo <see cref="BaseResponse{CreateOrderItemResponse}"/> contendo o item do Order criado e status http 201 created</returns>
+    [HttpPost("{id}/items")]
+    [ProducesResponseType(typeof(BaseResponse<OrderResponse>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(BaseResponse<ProblemDetails>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(BaseResponse<ProblemDetails>), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(typeof(BaseResponse<ProblemDetails>), StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> AddItem([FromRoute(Name="id")] string id, [FromBody] NewOrderItemRequest request)
+    {
+        var command = new AddOrderItemCommand(id, request);
+        var result = await mediator.Send(command);
+        return CreatedAtAction(nameof(Create), result, new BaseResponse<OrderResponse>(result));
+    }
+
+    /// <summary>
+    /// Cria um pedido
+    /// </summary>
+    /// <param name="request">Corpo do item do Order a ser criado</param>
+    /// <returns>uma response do tipo <see cref="BaseResponse{CreateOrderItemResponse}"/> contendo o item do Order criado e status http 201 created</returns>
     [HttpPost]
-    [ProducesResponseType(typeof(BaseResponse), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(BaseResponse<CreateOrderResponse>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(BaseResponse<ProblemDetails>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(BaseResponse<ProblemDetails>), StatusCodes.Status409Conflict)]
     [ProducesResponseType(typeof(BaseResponse<ProblemDetails>), StatusCodes.Status422UnprocessableEntity)]

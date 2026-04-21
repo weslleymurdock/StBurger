@@ -1,15 +1,16 @@
+using StBurger.App.Handlers; 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+
 builder.Services.ConfigureStBurgerServices(builder.Configuration);
 
 var app = builder.Build();
-
-app.UseGlobalExceptionHandler();
-
+ 
 app.UseMiddleware<HttpErrorHandlingMiddleware>();
 
 // Configure the HTTP request pipeline.
@@ -24,8 +25,17 @@ if (!app.Environment.IsProduction())
 {
     app.MapOpenApi();
     app.MapScalarApiReference("/scalar/stburger", options => {
-        options.WithTitle("StBurger RESTful API Documentation");
-        options.WithTheme(ScalarTheme.BluePlanet);
+        options.WithTitle("StBurger RESTful API Documentation")
+           .WithTheme(ScalarTheme.BluePlanet)
+           .WithDotNetFlag(true)
+           .WithDocumentDownloadType(DocumentDownloadType.Json)
+           .ForceDarkMode()
+           .ShowOperationId()
+           .ExpandAllTags()
+           .SortTagsAlphabetically()
+           .SortOperationsByMethod()
+           .WithSearchHotKey("s")
+           .PreserveSchemaPropertyOrder();
     });
 }
 
