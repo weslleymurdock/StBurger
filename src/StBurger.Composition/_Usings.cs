@@ -1,1 +1,10 @@
-﻿
+﻿global using Microsoft.EntityFrameworkCore;
+global using Microsoft.Extensions.Configuration;
+global using Microsoft.Extensions.DependencyInjection;
+global using Scalar.AspNetCore;
+global using StBurger.Application.Core.Abstractions.Repositories;
+global using StBurger.Application.Core.Abstractions.Services;
+global using StBurger.Application.Menu.Services;
+global using StBurger.Application.Order.Services;
+global using StBurger.Infrastructure.Persistence;
+global using StBurger.Infrastructure.Repositories;
