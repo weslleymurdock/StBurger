@@ -3,6 +3,7 @@
 public class StBurgerDbContext(DbContextOptions<StBurgerDbContext> options, ILogger<AuditableContext> logger, ILogger<StBurgerDbContext> dbLogger) : AuditableContext(options, logger)
 {
     public DbSet<Order> Orders { get; set; }
+    public DbSet<OrderItem> OrderItems { get; set; }
     public DbSet<Sandwich> Sandwiches { get; set; }
     public DbSet<Side> Sides { get; set; }
     public DbSet<Drink> Drinks { get; set; }

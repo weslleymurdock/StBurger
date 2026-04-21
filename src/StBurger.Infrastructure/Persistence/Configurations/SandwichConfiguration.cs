@@ -3,9 +3,7 @@
 public class SandwichConfiguration : IEntityTypeConfiguration<Sandwich>
 {
     public void Configure(EntityTypeBuilder<Sandwich> builder)
-    {
-        builder.HasKey(s => s.Id);
-
+    { 
         builder.Property(s => s.Name)
             .HasMaxLength(100)
             .IsRequired();

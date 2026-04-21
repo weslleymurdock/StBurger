@@ -9,6 +9,14 @@ public class OrderConfiguration : IEntityTypeConfiguration<Order>
     {
         builder.HasKey(o => o.Id);
 
+        builder.Property(o => o.Customer)
+            .IsRequired(false)
+            .HasMaxLength(96);
+
+        builder.Property(o => o.Attendant)
+            .IsRequired(false)
+            .HasMaxLength(96);
+
         builder.Property(o => o.Subtotal)
             .HasColumnType("decimal(10,2)")
             .IsRequired();

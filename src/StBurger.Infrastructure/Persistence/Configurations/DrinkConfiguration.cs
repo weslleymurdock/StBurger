@@ -3,8 +3,7 @@
 public class DrinkConfiguration : IEntityTypeConfiguration<Drink>
 {
     public void Configure(EntityTypeBuilder<Drink> builder)
-    {
-        builder.HasKey(d => d.Id);
+    { 
 
         builder.Property(d => d.Name)
             .HasMaxLength(100)

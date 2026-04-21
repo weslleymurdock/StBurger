@@ -3,9 +3,7 @@
 public class SideConfiguration : IEntityTypeConfiguration<Side>
 {
     public void Configure(EntityTypeBuilder<Side> builder)
-    {
-        builder.HasKey(s => s.Id);
-
+    { 
         builder.Property(s => s.Name)
             .HasMaxLength(100)
             .IsRequired();
