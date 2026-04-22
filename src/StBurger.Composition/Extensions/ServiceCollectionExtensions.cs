@@ -1,4 +1,5 @@
 ﻿using FluentValidation;
+using StBurger.Infrastructure.Services;
 
 namespace StBurger.Composition.Extensions;
 
@@ -34,7 +35,7 @@ public static class ServiceCollectionExtensions
                     dbOptions.CommandTimeout(45);
                 });
             });
-
+            services.AddScoped<IDbManager, DbManager>();
             services.AddScoped(typeof(IRepository<,>), typeof(Repository<,>));
             services.AddScoped(typeof(IUnitOfWork<>), typeof(UnitOfWork<>));
             services.AddScoped<IMenuService, MenuService>();

@@ -56,4 +56,12 @@ app.MapRazorComponents<App>()
 
 app.MapControllers();
  
+
+await app.MigrateDatabaseAsync();
+
+if (!app.Environment.IsProduction())
+{
+    await app.SeedDatabaseAsync();
+}
+
 await app.RunAsync();

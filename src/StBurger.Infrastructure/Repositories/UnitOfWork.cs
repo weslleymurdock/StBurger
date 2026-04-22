@@ -17,12 +17,12 @@ namespace StBurger.Infrastructure.Repositories
         public UnitOfWork(StBurgerDbContext dbContext)
         {
             _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
+            _repositories ??= [];
+
         }
 
         public IRepository<TEntity, TId> Repository<TEntity>() where TEntity : AuditableEntity<TId>
         {
-            _repositories ??= [];
-
             var type = typeof(TEntity).Name;
 
             if (!_repositories.ContainsKey(type))
@@ -34,7 +34,7 @@ namespace StBurger.Infrastructure.Repositories
                 _repositories.Add(type, repositoryInstance);
             }
 
-            return (IRepository<TEntity, TId>)_repositories[type];
+            return (IRepository<TEntity, TId>)_repositories[type]!;
         }
 
         public async Task<int> Commit(CancellationToken cancellationToken)
