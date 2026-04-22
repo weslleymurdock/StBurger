@@ -1,0 +1,20 @@
+#!/bin/bash
+set -e
+set +H
+SCRIPT_DIR=$(dirname "$(realpath "$0")")
+# Validação  
+case "$1" in
+    -d|"") 
+        ;;
+    *)
+        echo "Error: Invalid argument '$1'. Only '-d' or no argument is allowed."
+        exit 1
+        ;;
+esac
+ 
+docker-compose -f $SCRIPT_DIR/../docker-compose.yml up -d sqlserver
+ 
+echo "Waiting for SQL Server initialization..."
+sleep 10
+ 
+docker-compose -f $SCRIPT_DIR/../docker-compose.yml up $1 app

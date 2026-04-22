@@ -4,64 +4,82 @@ services:
     build:
       context: .
       dockerfile: src/StBurger.App/Dockerfile
+    depends_on:
+      - sqlserver
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_HTTP_PORTS: 80
       ASPNETCORE_HTTPS_PORTS: 443
       ASPNETCORE_Kestrel__Endpoints__Https__Url: https://0.0.0.0:443
-      ConnectionStrings__DefaultConnection: Server=sqlserver;Database=${DB_NAME};User Id=${DB_USER};Password=${DB_USER_PASSWORD};TrustServerCertificate=True; 
+      ConnectionStrings__DefaultConnection: Server=sqlserver;Initial Catalog=${DB_NAME};User Id=${DB_USER};Password=${DB_USER_PASSWORD};TrustServerCertificate=True;
       ASPNETCORE_Kestrel__Endpoints__Https__Certificate__Path: /https/stburger.pfx
       ASPNETCORE_Kestrel__Endpoints__Https__Certificate__Password: ${CERT_PASSWORD}
     ports:
-      - "80:80"
-      - "443:443" 
+      - "8080:80"
+      - "4443:443" 
     networks:
       - stnet
     volumes:
       - ./certs:/https:ro
+    entrypoint:
+      - /bin/bash
+      - -c
+      - |
+        echo "Waiting for SQL Server (sqlserver:1433)..."
+        until timeout 1s bash -c "cat < /dev/null > /dev/tcp/sqlserver/1433" 
+        do
+          echo "SQL Server port is not open yet. Retrying in 2s..."
+          sleep 2
+        done
+        echo "SQL Server is reachable! Giving 5s extra for provisioning script to finish..."
+        sleep 5
+        echo "Starting StBurger Application..."
+        dotnet StBurger.App.dll
 
   sqlserver:
     image: mcr.microsoft.com/mssql/server:2025-latest
     environment:
-      - ACCEPT_EULA=Y
-      - MSSQL_PID=Express
-      - SA_PASSWORD=${SA_PASSWORD}
-    ports:
-      - "1334:1433"
-    healthcheck:
-      test: ["CMD-SHELL", "timeout 1 sh -c '</dev/tcp/localhost/1433'"]
-      interval: 10s
-      timeout: 3s
-      retries: 15
-      start_period: 15s
-    networks:
-      - stnet
-    volumes:
-      - sqlvolume:/var/opt/mssql
-
-  sqlserver-setup:
-    image: mcr.microsoft.com/mssql-tools:latest
-    environment:
+      ACCEPT_EULA: Y
       DBHOST: sqlserver
       DBNAME: ${DB_NAME}
       DBUSER: ${DB_USER}
       DBUSER_PASSWORD: ${DB_USER_PASSWORD}
+      MSSQL_PID: Express
       SA_PASSWORD: ${SA_PASSWORD}
-    depends_on:
-      sqlserver:
-        condition: service_healthy
-    entrypoint: /bin/bash -c
-    command: >
-      /bin/bash -c "cp /data/provision.sh /tmp/provision.sh &&
-        apt-get update && apt-get install -y dos2unix &&
-        dos2unix /tmp/provision.sh &&
-        chmod +x /tmp/provision.sh &&
-        /tmp/provision.sh"
+    ports:
+      - "1334:1433" 
     networks:
       - stnet
     volumes:
-      - ./scripts/provision.sh:/data/provision.sh
+      - ./scripts:/data:ro
+      - sqlvolume:/var/opt/mssql
+    command: 
+      - /bin/bash
+      - -c
+      - |
+        /opt/mssql/bin/sqlservr &
+        pid=$$!
+        echo "SQL Server starting..."
+        
+        while ! /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$$SA_PASSWORD" -C -Q "SELECT 1" &> /dev/null; do
+          sleep 2
+          echo "Waiting for SQL Server to start..."
+        done 
 
+        echo "SQL Server is UP. Waiting 5s for internal stability..."
+        sleep 5
+
+        echo "Running provision.sh..."
+        /data/provision.sh
+        
+        if [ $$? -eq 0 ]; then
+          echo "Provisioning process finished successfully."
+        else
+          echo "ERROR: Provisioning script failed!"
+        fi
+        
+        wait $$pid
+ 
 networks:
   stnet:
     driver: bridge

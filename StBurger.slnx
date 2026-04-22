@@ -4,6 +4,7 @@
     <File Path="scripts/gen-cert.ps1" />
     <File Path="scripts/gen-cert.sh" />
     <File Path="scripts/migrate.ps1" />
+    <File Path="scripts/migrate.sh" />
     <File Path="scripts/provision.sh" />
   </Folder>
   <Folder Name="/src/">

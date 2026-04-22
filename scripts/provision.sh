@@ -1,18 +1,18 @@
-﻿#!/bin/bash
+#!/bin/bash
 set -e
 set +H
 
 DBHOST="${DBHOST:-localhost}"  # fallback se não estiver definido
-export PATH=$PATH:/opt/mssql-tools/bin
+export PATH=$PATH:/opt/mssql-tools18/bin/
 echo "🔄 Aguardando SQL '$DBHOST' aceitar conexões..."
 for i in {1..30}; do
-  sqlcmd -S "$DBHOST" -U sa -P "${SA_PASSWORD}" -Q "SELECT 1" && break
+  sqlcmd -S "$DBHOST" -U sa -P "${SA_PASSWORD}"  -C -Q "SELECT 1" && break
   sleep 2
 done
 
 echo "🛠️ Provisionando banco de dados '${DBNAME}'..."
 
-sqlcmd -S "$DBHOST" -U sa -P "${SA_PASSWORD}" -Q "
+sqlcmd -S "$DBHOST" -U sa -P "${SA_PASSWORD}"  -C -Q "
 IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = N'${DBNAME}')
 BEGIN
     CREATE DATABASE [${DBNAME}];
@@ -26,13 +26,13 @@ END
 
 echo "⏳ Aguardando banco '${DBNAME}' estar acessível..."
 for i in {1..30}; do
-  sqlcmd -S "$DBHOST" -U sa -P "${SA_PASSWORD}" -d "${DBNAME}" -Q "SELECT 1" && break
+  sqlcmd -S "$DBHOST" -U sa -P "${SA_PASSWORD}" -d "${DBNAME}"  -C -Q "SELECT 1" && break
   sleep 2
 done
 
 echo "👤 Provisionando login '${DBUSER}'..."
 
-sqlcmd -S "$DBHOST" -U sa -P "${SA_PASSWORD}" -Q "
+sqlcmd -S "$DBHOST" -U sa -P "${SA_PASSWORD}"  -C -Q "
 IF NOT EXISTS (SELECT name FROM sys.server_principals WHERE name = N'${DBUSER}')
 BEGIN
     CREATE LOGIN [${DBUSER}]
@@ -47,7 +47,7 @@ END
 
 echo "📌 Provisionando usuário no banco '${DBNAME}'..."
 
-sqlcmd -S "$DBHOST" -U sa -P "${SA_PASSWORD}" -d "${DBNAME}" -Q "
+sqlcmd -S "$DBHOST" -U sa -P "${SA_PASSWORD}" -d "${DBNAME}"  -C -Q "
 IF NOT EXISTS (SELECT name FROM sys.database_principals WHERE name = N'${DBUSER}')
 BEGIN
     CREATE USER [${DBUSER}] FOR LOGIN [${DBUSER}];
@@ -61,7 +61,7 @@ END
 
 echo "🔐 Concedendo db_owner se necessário..."
 
-sqlcmd -S "$DBHOST" -U sa -P "${SA_PASSWORD}" -d "${DBNAME}" -Q "
+sqlcmd -S "$DBHOST" -U sa -P "${SA_PASSWORD}" -d "${DBNAME}" -C -Q "
 IF NOT EXISTS (
     SELECT dp.name
     FROM sys.database_principals dp
@@ -81,10 +81,8 @@ END
 # 🧩 Executa script do Quartz se variável estiver definida
 if [ "${QUARTZ_PROVISIONING}" = "true" ]; then
   echo "📅 Executando script de schema do Quartz..."
-  sqlcmd -S "$DBHOST" -U ${DBUSER} -P "${DBUSER_PASSWORD}" -d "${DBNAME}" -i tables_sqlServer.sql
+  sqlcmd -S "$DBHOST" -U ${DBUSER} -P "${DBUSER_PASSWORD}" -d "${DBNAME}" -C -i tables_sqlServer.sql
   echo "✔️ Script de schema do Quartz executado com sucesso."
-else
-  echo "ℹ️ Pulando script de schema do Quartz."
 fi
 
 

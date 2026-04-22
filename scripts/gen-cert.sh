@@ -1,4 +1,4 @@
-﻿#!/bin/bash
+#!/bin/bash
 
 if [[ $EUID -ne 0 ]]; then
    echo "Este script precisa de acesso root. Solicitando sudo..."
