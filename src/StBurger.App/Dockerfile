@@ -18,7 +18,8 @@ COPY ["src/StBurger.Domain/StBurger.Domain.csproj", "StBurger.Domain/"]
 COPY ["src/StBurger.Composition/StBurger.Composition.csproj", "StBurger.Composition/"]
 COPY ["src/StBurger.Infrastructure/StBurger.Infrastructure.csproj", "StBurger.Infrastructure/"]
 RUN dotnet restore "./StBurger.App/StBurger.App.csproj"
-COPY . .
+COPY ./src .
+
 WORKDIR "/src/StBurger.App"
 RUN dotnet build "./StBurger.App.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
