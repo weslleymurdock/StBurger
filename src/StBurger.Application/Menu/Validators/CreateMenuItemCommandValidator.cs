@@ -33,7 +33,7 @@ public sealed class CreateMenuItemCommandValidator : AbstractValidator<CreateMen
             .NotNull()
             .NotEmpty()
             .WithMessage("O tipo do item de menu é obrigatório e não pode ser nulo ou vazio.")
-            .Must(x => Enum.TryParse<MenuItemType>(x, true, out _))
+            .Must(x => (new string[] { "sandwich", "side", "drink" }).Contains(x.ToLower()))
             .WithMessage("O tipo do item de menu deve ser um valor válido.");
 
         RuleFor(x => x.Data.Price)

@@ -30,7 +30,7 @@ namespace StBurger.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "MenuItem",
+                name: "Catalog",
                 columns: table => new
                 {
                     Id = table.Column<string>(type: "nvarchar(450)", nullable: false),
@@ -43,7 +43,7 @@ namespace StBurger.Infrastructure.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_MenuItem", x => x.Id);
+                    table.PrimaryKey("PK_Catalog", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -79,9 +79,9 @@ namespace StBurger.Infrastructure.Migrations
                 {
                     table.PrimaryKey("PK_OrderItems", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_OrderItems_MenuItem_MenuItemId",
+                        name: "FK_OrderItems_Catalog_MenuItemId",
                         column: x => x.MenuItemId,
-                        principalTable: "MenuItem",
+                        principalTable: "Catalog",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
@@ -91,6 +91,12 @@ namespace StBurger.Infrastructure.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Catalog_Name",
+                table: "Catalog",
+                column: "Name",
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_OrderItems_MenuItemId",
@@ -113,7 +119,7 @@ namespace StBurger.Infrastructure.Migrations
                 name: "OrderItems");
 
             migrationBuilder.DropTable(
-                name: "MenuItem");
+                name: "Catalog");
 
             migrationBuilder.DropTable(
                 name: "Orders");

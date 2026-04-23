@@ -4,8 +4,12 @@ public class MenuItemConfiguration : IEntityTypeConfiguration<MenuItem>
 {
     public void Configure(EntityTypeBuilder<MenuItem> builder)
     {
+        builder.ToTable("Catalog");
+
         builder.HasKey(m => m.Id);
 
+        builder.HasIndex(x => x.Name).IsUnique();
+        
         builder.Property(m => m.Name)
             .HasMaxLength(100)
             .IsRequired();

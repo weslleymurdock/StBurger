@@ -1,4 +1,6 @@
-using StBurger.App.Handlers; 
+using Microsoft.AspNetCore.Http.HttpResults;
+using StBurger.App.Filters;
+using StBurger.Infrastructure.Handlers;
 var builder = WebApplication.CreateBuilder(args);
 if (builder.Environment.IsDevelopment() && Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") != "true")
 {
@@ -9,21 +11,33 @@ if (builder.Environment.IsDevelopment() && Environment.GetEnvironmentVariable("D
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
-builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddControllers();
+
+// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
+builder.Services.AddOpenApi(options =>
+{
+    options.AddScalarTransformers();
+    options.AddOperationTransformer<DefaultContentTypeOperationTransformer>();
+});
 
 builder.Services.ConfigureStBurgerServices(builder.Configuration);
-
 var app = builder.Build();
- 
-app.UseMiddleware<HttpErrorHandlingMiddleware>();
 
 // Configure the HTTP request pipeline.
-if (!app.Environment.IsDevelopment())
+app.Use(async (context, next) =>
 {
-    app.UseExceptionHandler("/Error", createScopeForErrors: true);
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
-    app.UseHsts();
-}
+    var accept = context.Request.Headers.Accept.ToString();
+
+    if (string.IsNullOrWhiteSpace(accept) ||
+        accept.Contains("text/plain", StringComparison.OrdinalIgnoreCase))
+    {
+        context.Request.Headers.Accept = "application/json";
+    }
+
+    await next();
+});
+
+app.UseExceptionHandler();
 
 if (!app.Environment.IsProduction())
 {
@@ -42,7 +56,11 @@ if (!app.Environment.IsProduction())
            .PreserveSchemaPropertyOrder();
     });
 }
-
+else
+{
+    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
+    app.UseHsts();
+}
 app.UseHttpsRedirection();
 
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);

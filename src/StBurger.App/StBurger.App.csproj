@@ -28,9 +28,4 @@
     <ProjectReference Include="..\StBurger.Composition\StBurger.Composition.csproj" />
   </ItemGroup>
 
-
-  <ItemGroup>
-    <Folder Include="Extensions\" />
-  </ItemGroup>
-
 </Project>

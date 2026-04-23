@@ -6,6 +6,7 @@
     <File Path="scripts/migrate.ps1" />
     <File Path="scripts/migrate.sh" />
     <File Path="scripts/provision.sh" />
+    <File Path="scripts/reset-db.ps1" />
   </Folder>
   <Folder Name="/src/">
     <Project Path="src/StBurger.App/StBurger.App.csproj" />

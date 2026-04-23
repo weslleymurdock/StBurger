@@ -1,6 +1,4 @@
-﻿using StBurger.Domain.Menu.Entities;
-
-namespace StBurger.Application.Order.Requests;
+﻿namespace StBurger.Application.Order.Requests;
 
 public sealed record CreateOrderRequest(string AttendantName, string CustomerName, IList<NewOrderItemRequest> Items)
 {

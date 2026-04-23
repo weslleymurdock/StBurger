@@ -53,7 +53,10 @@ namespace StBurger.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("MenuItem");
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("Catalog", (string)null);
 
                     b.HasDiscriminator<string>("MenuItemType").HasValue("MenuItem");
 

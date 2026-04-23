@@ -1,4 +1,5 @@
 ﻿using FluentValidation;
+using StBurger.Infrastructure.Handlers;
 using StBurger.Infrastructure.Services;
 
 namespace StBurger.Composition.Extensions;
@@ -9,20 +10,23 @@ public static class ServiceCollectionExtensions
     {
         public IServiceCollection ConfigureStBurgerServices(IConfiguration configuration)
         {
+            services.AddProblemDetails(options =>
+            {
+                options.CustomizeProblemDetails = context =>
+                {
+                    var http = context.HttpContext;
+
+                    context.ProblemDetails.Extensions["traceId"] = http.TraceIdentifier;
+                    context.ProblemDetails.Instance =
+                        $"{http.Request.Method} {http.Request.Path}";
+                };
+            });
+
+            services.AddExceptionHandler<GlobalExceptionHandler>();
 
             services.AddHttpLogging(logging =>
             {
                 logging.LoggingFields = Microsoft.AspNetCore.HttpLogging.HttpLoggingFields.All;
-            });
-
-            // Add services to the container.
-            services.AddProblemDetails();
-            services.AddControllers();
-
-            // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-            services.AddOpenApi(options =>
-            {
-                options.AddScalarTransformers();
             });
 
             services.AddDbContext<StBurgerDbContext>(options =>

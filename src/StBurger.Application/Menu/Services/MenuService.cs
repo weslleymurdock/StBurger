@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using StBurger.Domain.Menu.Entities;
-using StBurger.Domain.Menu.Enums;
+using System.Linq.Expressions;
 
 namespace StBurger.Application.Menu.Services;
 
@@ -24,15 +24,13 @@ public sealed class MenuService(
     {
         try
         {
-            if (!Enum.TryParse<MenuItemType>(data.Type, true, out var menuItemType))
+            var type = data.Type.ToLower();
+
+            MenuItem item = type switch
             {
-                throw new InvalidCastException("Invalid menu item type");
-            }
-            MenuItem item = menuItemType switch
-            {
-                MenuItemType.Sandwich => await sandwichRepository.AddAsync(new Sandwich(data.Name, data.Description, data.Price)),
-                MenuItemType.Drink => await drinkRepository.AddAsync(new Drink(data.Name, data.Description, data.Price)),
-                MenuItemType.Side => await sideRepository.AddAsync(new Side(data.Name, data.Description, data.Price)),
+                "sandwich" or "sanduiche" => await sandwichRepository.AddAsync(new Sandwich(data.Name, data.Description, data.Price)),
+                "drink" or "bebida" => await drinkRepository.AddAsync(new Drink(data.Name, data.Description, data.Price)),
+                "side" or "acompanhamento" => await sideRepository.AddAsync(new Side(data.Name, data.Description, data.Price)),
                 _ => throw new ArgumentException("Invalid menu item type"),
             };
             await uow.Commit(cancellationToken);
@@ -80,6 +78,20 @@ public sealed class MenuService(
     }
 
     /// <inheritdoc/>
+    public bool Exists(Expression<Func<MenuItem, bool>> expression)
+    {
+        try
+        {
+            return uow.Repository<MenuItem>().Entities.Any(expression);
+        }
+        catch (Exception e)
+        {
+            logger.LogWarning(e, "Failed to check if menu item exists: {Message}", e.Message);
+            throw;
+        }
+    }
+
+    /// <inheritdoc/>
     public async Task<IReadOnlyCollection<MenuItemResponse>> GetAsync(CancellationToken cancellationToken)
     {
         try
@@ -88,10 +100,10 @@ public sealed class MenuService(
             items.AddRange(await sandwichRepository.GetAllAsync());
             items.AddRange(await drinkRepository.GetAllAsync());
             items.AddRange(await sideRepository.GetAllAsync());
-            if (items.Any(i => i is not null))
-                return [.. items.Select(MenuItemResponse.FromEntity)];
-            else
-                throw new KeyNotFoundException("No menu items found");
+
+            return items.Any(i => i is not null)
+                ? [.. items.Select(MenuItemResponse.FromEntity)]
+                : throw new KeyNotFoundException("No menu items found");
         }
         catch (Exception e)
         {
@@ -105,10 +117,9 @@ public sealed class MenuService(
     {
         try
         {
-            return MenuItemResponse.FromEntity((await sandwichRepository.GetByIdAsync(id) as MenuItem
-              ?? await drinkRepository.GetByIdAsync(id) as MenuItem
-              ?? await sideRepository.GetByIdAsync(id) as MenuItem)
-              ?? throw new KeyNotFoundException("Menu item not found"));
+            var item = await uow.Repository<MenuItem>().GetByIdAsync(id);
+
+            return MenuItemResponse.FromEntity(item);
         }
         catch (Exception e)
         {
@@ -211,15 +222,13 @@ public sealed class MenuService(
     /// <param name="data">Tupla de dados a serem atualizados</param>
     /// <returns>O item de menu atualizado, não salvo no banco de dados</returns>
     /// <exception cref="KeyNotFoundException">Lançado quando o item não é encontrado no banco de dados</exception>
-    private async Task<MenuItem> UpdateMenuItem((string id, string name, string description, decimal? price) data)
+    private async Task<MenuItem> UpdateMenuItem((string id, string name, string description, decimal? price) data = default!)
     {
         try
         {
-            var item = (await sandwichRepository.GetByIdAsync(data.id) as MenuItem
-                ?? await drinkRepository.GetByIdAsync(data.id) as MenuItem
-                ?? await sideRepository.GetByIdAsync(data.id) as MenuItem)
+            var item = await uow.Repository<MenuItem>().GetByIdAsync(data.id!)
                 ?? throw new KeyNotFoundException("Menu item not found");
-            item.Update(data.name ?? item.Name, data.description ?? item.Description, data.price ?? item.Price);
+            item.Update(string.IsNullOrEmpty(data.name) || string.IsNullOrWhiteSpace(data.name) ? item.Name : data.name,string.IsNullOrEmpty(data.description) || string.IsNullOrWhiteSpace(data.description) ? item.Description : data.description, data.price.HasValue && data.price.Value > 0? data.price.Value : item.Price);
             return item;
         }
         catch (Exception e)
@@ -257,4 +266,5 @@ public sealed class MenuService(
             throw;
         }
     }
+
 }

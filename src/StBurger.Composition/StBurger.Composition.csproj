@@ -6,7 +6,6 @@
   </ItemGroup>
   
   <ItemGroup>
-    <!-- Isso libera o AddControllers e todas as APIs do ASP.NET Core -->
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
   

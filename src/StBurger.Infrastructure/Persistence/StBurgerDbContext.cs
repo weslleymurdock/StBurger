@@ -7,7 +7,7 @@ public class StBurgerDbContext(DbContextOptions<StBurgerDbContext> options, ILog
     public DbSet<Sandwich> Sandwiches { get; set; }
     public DbSet<Side> Sides { get; set; }
     public DbSet<Drink> Drinks { get; set; }
-
+    public DbSet<MenuItem> Catalog { get; set; }
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(StBurgerDbContext).Assembly);

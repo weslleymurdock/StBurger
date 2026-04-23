@@ -4,7 +4,6 @@ public class DrinkConfiguration : IEntityTypeConfiguration<Drink>
 {
     public void Configure(EntityTypeBuilder<Drink> builder)
     { 
-
         builder.Property(d => d.Name)
             .HasMaxLength(100)
             .IsRequired();
