@@ -16,11 +16,31 @@ public class OrderController(IMediator mediator) : ControllerBase
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> AddItem([FromRoute(Name="id")] string id, [FromBody] NewOrderItemRequest request)
+    public async Task<IActionResult> AddItem(
+        [FromRoute(Name="id")] string id, 
+        [FromBody] NewOrderItemRequest request)
     {
         var command = new AddOrderItemCommand(id, request);
         var result = await mediator.Send(command);
         return CreatedAtAction(nameof(Create), result, BaseResponse<OrderResponse>.Ok("Order item added successfully", 201, result));
+    }
+    
+    /// <summary>
+    /// Remove um item do Order
+    /// </summary>
+    /// <param name="request">Corpo do item do Order a ser removido</param>
+    /// <returns>uma response do tipo <see cref="BaseResponse{CreateOrderItemResponse}"/> contendo o item do Order removido e status http 200 ok</returns>
+    [HttpDelete("{order}/items/{item}")]
+    [ProducesResponseType(typeof(BaseResponse<OrderResponse>), StatusCodes.Status202Accepted)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteItem(
+        [FromRoute(Name="order")] string order, 
+        [FromRoute(Name="item")] string item)
+    {
+        var command = new DeleteOrderItemCommand(order, item);
+        _ = await mediator.Send(command);
+        return Accepted(BaseResponse.Ok("Order item removed successfully", 202));
     }
 
     /// <summary>
@@ -56,9 +76,9 @@ public class OrderController(IMediator mediator) : ControllerBase
     }
 
     /// <summary>
-    /// Busca um item específico do Order pelo seu id
+    /// Busca um item específico do Order pelo seu oder
     /// </summary>
-    /// <param name="id">O id do item do Order</param>
+    /// <param name="id">O oder do item do Order</param>
     /// <returns>Uma instancia de <see cref="IActionResult"/> com o item do Order no corpo da response e contendo status http 200 ok</returns>
     [HttpGet("{id}")]
     [ProducesResponseType(typeof(BaseResponse<OrderResponse>), StatusCodes.Status200OK)]
@@ -70,8 +90,6 @@ public class OrderController(IMediator mediator) : ControllerBase
         var result = await mediator.Send(query);
         return Ok(BaseResponse<OrderResponse>.Ok("Order retrieved successfully", 200, result));
     }
-
-
 
     /// <summary>
     /// Atualiza um item do Order
@@ -91,9 +109,9 @@ public class OrderController(IMediator mediator) : ControllerBase
     }
 
     /// <summary>
-    /// Remove um pedido utilizando seu id
+    /// Remove um pedido utilizando seu oder
     /// </summary>
-    /// <param name="id">O id do pedido a ser removido</param>
+    /// <param name="id">O oder do pedido a ser removido</param>
     /// <returns>Uma instância de <see cref="IActionResult"/> com status http 204 no content</returns>
     [HttpDelete("{id}")]
     [ProducesResponseType<BaseResponse>(StatusCodes.Status202Accepted)]
