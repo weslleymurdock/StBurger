@@ -78,20 +78,6 @@ public sealed class MenuService(
     }
 
     /// <inheritdoc/>
-    public bool Exists(Expression<Func<MenuItem, bool>> expression)
-    {
-        try
-        {
-            return uow.Repository<MenuItem>().Entities.Any(expression);
-        }
-        catch (Exception e)
-        {
-            logger.LogWarning(e, "Failed to check if menu item exists: {Message}", e.Message);
-            throw;
-        }
-    }
-
-    /// <inheritdoc/>
     public async Task<IReadOnlyCollection<MenuItemResponse>> GetAsync(CancellationToken cancellationToken)
     {
         try
