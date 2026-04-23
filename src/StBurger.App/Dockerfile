@@ -7,7 +7,6 @@ WORKDIR /app
 EXPOSE 80
 EXPOSE 443
 
-
 # Esta fase é usada para compilar o projeto de serviço
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 ARG BUILD_CONFIGURATION=Release
@@ -32,4 +31,6 @@ RUN dotnet publish "./StBurger.App.csproj" -c $BUILD_CONFIGURATION -o /app/publi
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
+ENV DOTNET_RUNNING_IN_CONTAINER=true
+
 ENTRYPOINT ["dotnet", "StBurger.App.dll"]

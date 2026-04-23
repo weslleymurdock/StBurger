@@ -1,6 +1,10 @@
 using StBurger.App.Handlers; 
 var builder = WebApplication.CreateBuilder(args);
-
+if (builder.Environment.IsDevelopment() && Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") != "true")
+{
+    // User secrets only outside docker containers and at development environment
+    builder.Configuration.AddUserSecrets<Program>();
+}
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
