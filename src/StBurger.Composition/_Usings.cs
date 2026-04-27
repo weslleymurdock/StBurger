@@ -1,7 +1,12 @@
-﻿global using Microsoft.EntityFrameworkCore;
+﻿global using FluentValidation;
+global using MediatR;
+global using Microsoft.EntityFrameworkCore;
 global using Microsoft.Extensions.Configuration;
 global using Microsoft.Extensions.DependencyInjection;
 global using Scalar.AspNetCore;
+global using StBurger.Infrastructure.Behaviors;
+global using StBurger.Infrastructure.Handlers;
+global using StBurger.Infrastructure.Services;
 global using StBurger.Application.Core.Abstractions.Repositories;
 global using StBurger.Application.Core.Abstractions.Services;
 global using StBurger.Application.Menu.Services;

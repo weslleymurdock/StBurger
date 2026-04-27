@@ -1,13 +1,13 @@
 {
   "profiles": {
-    "http": {
+    "https": {
       "commandName": "Project",
       "launchBrowser": true,
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       },
       "dotnetRunMessages": true,
-      "applicationUrl": "http://localhost:80",
+      "applicationUrl": "https://localhost:443;http://localhost:80",
       "useSSL": true,
       "hotReloadEnabled": true,
       "hotReloadProfile": "aspnetcore",
@@ -17,14 +17,14 @@
         "**/obj/**"
       ]
     },
-    "https": {
+    "http": {
       "commandName": "Project",
       "launchBrowser": true,
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       },
       "dotnetRunMessages": true,
-      "applicationUrl": "https://localhost:443;http://localhost:80",
+      "applicationUrl": "http://localhost:80",
       "useSSL": true,
       "hotReloadEnabled": true,
       "hotReloadProfile": "aspnetcore",

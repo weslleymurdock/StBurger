@@ -15,6 +15,9 @@
     <Project Path="src/StBurger.Domain/StBurger.Domain.csproj" />
     <Project Path="src/StBurger.Infrastructure/StBurger.Infrastructure.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/StBurger.UnitTests/StBurger.UnitTests.csproj" />
+  </Folder>
   <Project Path="docker-compose.dcproj">
     <Build />
   </Project>

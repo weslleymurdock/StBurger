@@ -7,9 +7,11 @@ public sealed record CreateOrderResponse
     string Attendant,
     string Customer,
     List<MenuItemResponse> Items,
+    decimal Discountered,
+    decimal SubTotal,
     decimal TotalPrice)
 {
-    internal static CreateOrderResponse ToResponse(Domain.Orders.Entities.Order result)
+    public static CreateOrderResponse ToResponse(Domain.Orders.Entities.Order result)
     {
         ArgumentNullException.ThrowIfNull(result);
         return new CreateOrderResponse(
@@ -17,6 +19,8 @@ public sealed record CreateOrderResponse
             Attendant: result.Attendant,
             Customer: result.Customer,
             Items: [.. result.Items.Select(item => MenuItemResponse.FromOrderItemResponse(item))],
+            Discountered: result.Discount,
+            SubTotal: result.Subtotal,
             TotalPrice: result.Total
         );
     }

@@ -17,6 +17,9 @@ public class OrderConfiguration : IEntityTypeConfiguration<Order>
             .IsRequired(false)
             .HasMaxLength(96);
 
+        builder.HasIndex(o => new { o.Id, o.Customer, o.Attendant })
+            .IsUnique(true);
+
         builder.Property(o => o.Subtotal)
             .HasColumnType("decimal(10,2)")
             .IsRequired();

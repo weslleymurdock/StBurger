@@ -11,7 +11,26 @@ if (builder.Environment.IsDevelopment() && Environment.GetEnvironmentVariable("D
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .ConfigureApiBehaviorOptions(options =>
+{
+    options.InvalidModelStateResponseFactory = context =>
+    {
+        // Isso garante que erros de validação e Content-Type 
+        // também usem o IProblemDetailsService
+        var problemDetailsService = context.HttpContext.RequestServices.GetRequiredService<IProblemDetailsService>();
+
+        var problemDetails = new ProblemDetails
+        {
+            Status = StatusCodes.Status400BadRequest,
+            Title = "Requisição Inválida",
+            Detail = "O formato da requisição (Content-Type) ou os dados enviados estão incorretos.",
+            Instance = context.HttpContext.Request.Path
+        };
+
+        return new BadRequestObjectResult(problemDetails);
+    };
+}); 
 
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi(options =>

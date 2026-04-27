@@ -1,6 +1,6 @@
 ﻿namespace StBurger.Infrastructure.Persistence;
 
-public abstract class AuditableContext(DbContextOptions options, ILogger<AuditableContext> logger) : DbContext(options)
+public abstract class AuditableContext(DbContextOptions options) : DbContext(options)
 {
     public DbSet<Audit> AuditTrails { get; set; }
 
@@ -15,7 +15,6 @@ public abstract class AuditableContext(DbContextOptions options, ILogger<Auditab
         }
         catch (Exception e)
         {
-            logger.LogWarning(e, "An error occurred while saving changes to the database. Auditing may not be complete. Error: {Message}", e.Message);
             throw;
         }
     }

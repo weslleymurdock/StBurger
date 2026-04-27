@@ -7,7 +7,7 @@ public sealed record UpdateOrderResponse
     IReadOnlyCollection<MenuItemResponse> Items,
     decimal TotalPrice)
 {
-    internal static UpdateOrderResponse ToResponse(Domain.Orders.Entities.Order result)
+    public static UpdateOrderResponse ToResponse(Domain.Orders.Entities.Order result)
     {
         ArgumentNullException.ThrowIfNull(result);
         return new UpdateOrderResponse(

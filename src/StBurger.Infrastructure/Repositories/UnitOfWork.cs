@@ -1,71 +1,86 @@
-﻿using StBurger.Application.Core.Abstractions.Repositories;
+﻿using Microsoft.EntityFrameworkCore.Storage;
+using StBurger.Application.Core.Abstractions.Repositories;
 using StBurger.Domain.Core.Entities;
 using StBurger.Infrastructure.Persistence;
-using System;
 using System.Collections;
-using System.Collections.Generic;
-using System.Text;
 
-namespace StBurger.Infrastructure.Repositories
+namespace StBurger.Infrastructure.Repositories;
+
+public class UnitOfWork<TId> : IUnitOfWork<TId> where TId : class, IEquatable<TId>
 {
-    public class UnitOfWork<TId> : IUnitOfWork<TId> where TId : class, IEquatable<TId>
+    private readonly StBurgerDbContext _dbContext;
+    private bool disposed;
+    private Hashtable _repositories;
+    private IDbContextTransaction? _transaction;
+    public UnitOfWork(StBurgerDbContext dbContext)
     {
-        private readonly StBurgerDbContext _dbContext;
-        private bool disposed;
-        private Hashtable _repositories;
+        _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
+        _repositories ??= [];
 
-        public UnitOfWork(StBurgerDbContext dbContext)
+    }
+    public async Task BeginTransactionAsync()
+    {
+        _transaction ??= await _dbContext.Database.BeginTransactionAsync();
+    }
+
+    public async Task<int> Commit(CancellationToken cancellationToken)
+    {
+        var result = await _dbContext.SaveChangesAsync(cancellationToken);
+
+        if (_transaction is not null)
         {
-            _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
-            _repositories ??= [];
-
+            await _transaction.CommitAsync();
+            await _transaction.DisposeAsync();
+            _transaction = null;
         }
 
-        public IRepository<TEntity, TId> Repository<TEntity>() where TEntity : AuditableEntity<TId>
-        {
-            var type = typeof(TEntity).Name;
+        return result;
+    }
 
-            if (!_repositories.ContainsKey(type))
+    public IRepository<TEntity, TId> Repository<TEntity>() where TEntity : class, IAuditableEntity<TId>
+    {
+        var type = typeof(TEntity).Name;
+
+        if (!_repositories.ContainsKey(type))
+        {
+            var repositoryType = typeof(Repository<,>);
+
+            var repositoryInstance = Activator.CreateInstance(repositoryType.MakeGenericType(typeof(TEntity), typeof(TId)), _dbContext);
+
+            _repositories.Add(type, repositoryInstance);
+        }
+
+        return (IRepository<TEntity, TId>)_repositories[type]!;
+    }
+    public async Task Rollback()
+    {
+        if (_transaction is not null)
+        {
+            await _transaction.RollbackAsync();
+            await _transaction.DisposeAsync();
+            _transaction = null;
+        }
+
+        _dbContext.ChangeTracker.Clear();
+    }
+
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (!disposed)
+        {
+            if (disposing)
             {
-                var repositoryType = typeof(Repository<,>);
-
-                var repositoryInstance = Activator.CreateInstance(repositoryType.MakeGenericType(typeof(TEntity), typeof(TId)), _dbContext);
-
-                _repositories.Add(type, repositoryInstance);
+                //dispose managed resources
+                _dbContext.Dispose();
             }
-
-            return (IRepository<TEntity, TId>)_repositories[type]!;
         }
-
-        public async Task<int> Commit(CancellationToken cancellationToken)
-        {
-            return await _dbContext.SaveChangesAsync(cancellationToken);
-        }
-
-        public Task Rollback()
-        {
-            _dbContext.ChangeTracker.Entries().ToList().ForEach(x => x.Reload());
-            return Task.CompletedTask;
-        }
-
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!disposed)
-            {
-                if (disposing)
-                {
-                    //dispose managed resources
-                    _dbContext.Dispose();
-                }
-            }
-            //dispose unmanaged resources
-            disposed = true;
-        }
+        //dispose unmanaged resources
+        disposed = true;
     }
 }

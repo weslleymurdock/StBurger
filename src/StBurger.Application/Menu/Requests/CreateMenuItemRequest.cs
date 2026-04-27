@@ -4,7 +4,7 @@ namespace StBurger.Application.Menu.Requests;
 
 public sealed record CreateMenuItemRequest(string Name, decimal Price, string Description, string Type)
 {
-    internal static MenuItem ToEntity(CreateMenuItemRequest request)
+    public static MenuItem ToEntity(CreateMenuItemRequest request)
     {
         return request.Type.ToLower() switch
         {

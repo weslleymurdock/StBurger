@@ -64,7 +64,6 @@ public class Order : AuditableEntity<string>
             throw new DuplicateItemException(menuItem.Name);
 
         Items.Add(new OrderItem(Id, menuItem));
-        Validate();
         CalculateTotals();
     }
 
@@ -76,7 +75,7 @@ public class Order : AuditableEntity<string>
     {
         var item = Items.FirstOrDefault(i => i.MenuItem.Id == menuItemId);
         if (item != null)
-        {
+        { 
             Items.Remove(item);
             CalculateTotals();
         }
@@ -86,7 +85,7 @@ public class Order : AuditableEntity<string>
     /// Valida regras de negócio do pedido.
     /// </summary>
     /// <exception cref="InvalidOrderException">Lançada quando o pedido não contém ao menos um sanduíche.</exception>
-    private void Validate()
+    public void Validate()
     {
         if (!Items.Any(i => i.MenuItem is Sandwich))
             throw new InvalidOrderException("O pedido deve conter ao menos um sanduíche.");

@@ -1,6 +1,8 @@
-﻿namespace StBurger.Infrastructure.Persistence;
+﻿using StBurger.Domain.Menu.Enums;
 
-public class StBurgerDbContext(DbContextOptions<StBurgerDbContext> options, ILogger<AuditableContext> logger, ILogger<StBurgerDbContext> dbLogger) : AuditableContext(options, logger)
+namespace StBurger.Infrastructure.Persistence;
+
+public class StBurgerDbContext(DbContextOptions<StBurgerDbContext> options) : AuditableContext(options)
 {
     public DbSet<Order> Orders { get; set; }
     public DbSet<OrderItem> OrderItems { get; set; }
@@ -31,13 +33,26 @@ public class StBurgerDbContext(DbContextOptions<StBurgerDbContext> options, ILog
                         break;
                 }
             }
+            foreach (var entry in ChangeTracker.Entries<OrderItem>()
+            .Where(e => e.State == EntityState.Added ||
+            e.State == EntityState.Modified))
+            {
+                entry.Property("MenuItemType")
+                    .CurrentValue = MapType(entry.Entity.MenuItem);
+            }
             return await base.SaveChangesAsync(cancellationToken);
         }
         catch (Exception e)
         {
-            dbLogger.LogWarning(e, "An error occurred: {Message}", e.Message);
             throw;
         }
     }
 
+    private static MenuItemType MapType(MenuItem item) => item switch
+    {
+        Sandwich => MenuItemType.Sandwich,
+        Side => MenuItemType.Side,
+        Drink => MenuItemType.Drink,
+        _ => throw new InvalidOperationException("Tipo desconhecido")
+    };
 }

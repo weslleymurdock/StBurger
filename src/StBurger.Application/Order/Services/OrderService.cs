@@ -1,131 +1,148 @@
-﻿namespace StBurger.Application.Order.Services;
-using System.Collections.Generic;
-using Microsoft.Extensions.Logging;
-using StBurger.Domain.Menu.Entities;
+﻿using StBurger.Domain.Menu.Entities;
+
+namespace StBurger.Application.Order.Services;
+
 using Order = Domain.Orders.Entities.Order;
 
-public sealed class OrderService(IRepository<Order, string> orderRepository, IRepository<OrderItem, string> orderItemRepository, IRepository<MenuItem, string> menuRepository, IUnitOfWork<string> uow, ILogger<OrderService> logger) : IOrderService
+public sealed class OrderService(IUnitOfWork<string> uow, IOrderReadOnlyRepository ro) : IOrderService
 {
     public async Task<OrderResponse> AddItemAsync(string id, string itemId, CancellationToken cancellationToken)
     {
-        try
-        {
-            Order order = await orderRepository.GetByIdAsync(id) ?? throw new KeyNotFoundException("Order not found");
-            MenuItem orderItem = await menuRepository.GetByIdAsync(itemId) ?? throw new KeyNotFoundException("Menu item not found");
-            order.AddItem(orderItem);
-            await orderRepository.UpdateAsync(order);
-            await uow.Commit(cancellationToken);
-            return OrderResponse.FromEntity(order);
+        var order = await ro.GetByIdWithItemsAsync(id, cancellationToken);
 
-        }
-        catch (Exception e)
-        {
-            await uow.Rollback();
-            logger.LogWarning(e, "Failed to add item with ID {ItemId} to order with ID {OrderId}. Error: {Message}", itemId, id, e.Message);
-            throw;
-        }
+        MenuItem orderItem = uow
+            .Repository<MenuItem>()
+            .Entities
+            .FirstOrDefault(m => m.Id == itemId) ??
+            throw new KeyNotFoundException("Produto não encontrado");
+
+        order.AddItem(orderItem);
+        order.Validate();
+
+        return OrderResponse.FromEntity(order);
     }
 
     public async Task<CreateOrderResponse> CreateOrderAsync(CreateOrderRequest data, CancellationToken cancellationToken)
     {
-        try
-        {
-            Order order = CreateOrderRequest.ToEntity(data); 
-            var result = await orderRepository.AddAsync(order);
-            await uow.Commit(cancellationToken);
-            return CreateOrderResponse.ToResponse(result);
-        }
-        catch (Exception e)
-        {
-            await uow.Rollback();
-            logger.LogWarning(e, 
-                "Failed to create order for customer {CustomerName} attended by {AttendantName}. Error: {Message}", 
-                data.CustomerName, data.AttendantName, e.Message);
-            throw;
-        }
+
+        var order = CreateOrderRequest.ToEntity(data);
+
+        var itemIds = data.Items.Select(x => x.Id).ToList();
+
+        var menuItems = uow.Repository<MenuItem>()
+            .Entities
+            .Where(x => itemIds.Contains(x.Id))
+            .ToList();
+
+        if (menuItems.Count != itemIds.Count)
+            throw new KeyNotFoundException("Um ou mais produtos não foram encontrados");
+
+        foreach (var item in menuItems)
+            order.AddItem(item);
+
+        order.Validate();
+
+        await uow.Repository<Order>().AddAsync(order);
+
+        return CreateOrderResponse.ToResponse(order);
+
     }
 
     public async Task<Unit> DeleteItemAsync(string id, string itemId, CancellationToken cancellationToken)
     {
-        try
-        {
-            var order = await orderRepository.GetByIdAsync(id) ?? throw new KeyNotFoundException("Order not found");
-            var orderItem = await orderItemRepository.GetByIdAsync(itemId) ?? throw new KeyNotFoundException("Order item not found");
-            await orderItemRepository.DeleteAsync(orderItem);
-            await uow.Commit(cancellationToken);
-            return Unit.Value;
-        }
-        catch (Exception e)
-        {
-            await uow.Rollback();
-            logger.LogWarning(e, "Failed to delete order item with id {ItemId} at order with id {OrderId}. Error: {Message}", itemId, id, e.Message);
-            throw;
-        }
+
+        Order order = await ro.GetByIdWithItemsAsync(id, cancellationToken) ??
+            throw new KeyNotFoundException("Pedido não encontrado");
+
+        if (!order.Items.Any(x => x.MenuItem.Id == itemId))
+            throw new KeyNotFoundException("Produto não encontrado no pedido");
+
+        order.RemoveItem(itemId);
+
+        return Unit.Value;
+
     }
 
     public async Task<Unit> DeleteOrderAsync(string id, CancellationToken cancellationToken)
     {
-        try
-        {
-            var order = await orderRepository.GetByIdAsync(id) ?? throw new KeyNotFoundException("Order not found");
-            await orderRepository.DeleteAsync(order);
-            await uow.Commit(cancellationToken);
-            return Unit.Value;
-        }
-        catch (Exception e)
-        {
-            await uow.Rollback();
-            logger.LogWarning(e, "Failed to delete order with ID {OrderId}. Error: {Message}", id, e.Message);
-            throw;
-        }
+
+        var order = uow.Repository<Order>()
+            .Entities
+            .FirstOrDefault<Order>(x => x.Id == id)
+            ?? throw new KeyNotFoundException("Pedido não encontrado");
+        await uow.Repository<Order>().DeleteAsync(order);
+
+        return Unit.Value;
+
     }
 
     public async Task<IList<OrderResponse>> GetAsync(CancellationToken cancellationToken)
     {
-        try
-        {
-            return [.. (await orderRepository.GetAllAsync()).Select(e => OrderResponse.FromEntity(e))];
-        }
-        catch (Exception e)
-        {
-            logger.LogWarning(e, "Failed to retrieve orders. Error: {Message}", e.Message);
-            throw;
-        }
+        var orders = await ro.GetWithItemsAsync(cancellationToken);
+
+        IList<OrderResponse> response = orders.Any()
+            ? [.. orders.Select(e => OrderResponse.FromEntity(e))]
+            : throw new KeyNotFoundException("Pedidos não encontrados");
+
+        return response;
     }
 
     public async Task<OrderResponse?> GetAsync(string id, CancellationToken cancellationToken)
     {
-        try
-        {
-            return OrderResponse.FromEntity(await orderRepository.GetByIdAsync(id));
-        }
-        catch (Exception e)
-        {
-            logger.LogWarning(e, "Failed to retrieve order by id '{Id}'. Error: {Message}", id, e.Message);
-            throw;
-        }
+        return OrderResponse.FromEntity(await ro.GetByIdWithItemsAsync(id, cancellationToken));
     }
 
     public async Task<UpdateOrderResponse> UpdateOrderAsync(UpdateOrderRequest data, CancellationToken cancellationToken)
     {
-        try
-        {
-            Order order = await orderRepository.GetByIdAsync(data.Id) ?? throw new KeyNotFoundException("Order not found");
-            List<MenuItem> items = [];
-            foreach (var item in data.Items)
-            {
-                var menuItem = await menuRepository.GetByIdAsync(item.Id) ?? throw new KeyNotFoundException("Menu item not found");
-                items.Add(menuItem);
-            }
+        var order = await ro.GetByIdWithItemsAsync(data.Id, cancellationToken)
+            ?? throw new KeyNotFoundException("Pedido não encontrado");
 
-            order.Update(data.Attendant, data.CustomerName, items);
-            await orderRepository.UpdateAsync(order);
-            return UpdateOrderResponse.ToResponse(order);
-        }
-        catch (Exception e)
+        var itemIds = data.Items.Select(x => x.Id).ToList();
+
+        var menuItems = uow.Repository<MenuItem>()
+            .Entities
+            .Where(x => itemIds.Contains(x.Id))
+            .ToList();
+
+        if (menuItems.Count != itemIds.Count)
+            throw new KeyNotFoundException("Um ou mais produtos do pedido não foram encontrados");
+
+        var currentItems = order.Items;
+
+        var currentIds = currentItems
+            .Select(i => i.MenuItem.Id)
+            .ToHashSet();
+
+        var newIds = menuItems
+            .Select(m => m.Id)
+            .ToHashSet();
+
+        var idsToRemove = currentIds
+            .Where(id => !newIds.Contains(id))
+            .ToList();
+
+        if (idsToRemove.Count > 0)
         {
-            logger.LogWarning(e, "Failed to update order with ID {OrderId}. Error: {Message}", data.Id, e.Message);
-            throw;
+            await uow.Repository<OrderItem>()
+                .DeleteAsync(x => x.OrderId == order.Id && idsToRemove.Contains(x.MenuItem.Id));
+
+            order.Items.RemoveAll(i => idsToRemove.Contains(i.MenuItem.Id));
         }
+
+        var toAdd = menuItems
+            .Where(m => !currentIds.Contains(m.Id))
+            .ToList();
+
+        foreach (var menuItem in toAdd)
+        {
+            order.AddItem(menuItem);
+        }
+
+        order.Attendant = data.Attendant;
+        order.Customer = data.CustomerName;
+
+        order.Validate();
+
+        return UpdateOrderResponse.ToResponse(order);
     }
 }

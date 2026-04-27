@@ -3,6 +3,7 @@ using StBurger.Domain.Core.Entities;
 using StBurger.Infrastructure.Persistence;
 namespace StBurger.Infrastructure.Repositories;
 using Domain.Core.Exceptions;
+using System.Linq.Expressions;
 
 public class Repository<T, TId>(StBurgerDbContext dbContext) : IRepository<T, TId> where T : AuditableEntity<TId>, IAuditableEntity<TId>
     where TId : class, IEquatable<TId>
@@ -17,7 +18,12 @@ public class Repository<T, TId>(StBurgerDbContext dbContext) : IRepository<T, TI
 
     public async Task DeleteAsync(T entity)
     {
-        await dbContext.Set<T>().Where(x => x.Id == entity.Id).ExecuteDeleteAsync<T>();
+        _ = await dbContext.Set<T>().Where(x => x.Id == entity.Id).ExecuteDeleteAsync<T>();
+    }
+
+    public async Task DeleteAsync(Expression<Func<T, bool>> predicate)
+    {
+        _ = await dbContext.Set<T>().Where(predicate).ExecuteDeleteAsync<T>();
     }
 
     public async Task<IList<T>> GetAllAsync()
@@ -29,7 +35,8 @@ public class Repository<T, TId>(StBurgerDbContext dbContext) : IRepository<T, TI
 
     public async Task<T> GetByIdAsync(TId id)
     {
-        return await dbContext.Set<T>().FindAsync(id) ?? throw new EntityNotFoundException($"Entity not found", "NOT_FOUND");
+        return await dbContext.Set<T>().FindAsync(id) 
+            ?? throw new EntityNotFoundException($"Entity not found", "NOT_FOUND");
     }
 
     public async Task<IList<T>> GetPagedResponseAsync(int pageNumber, int pageSize)
@@ -59,8 +66,33 @@ public class Repository<T, TId>(StBurgerDbContext dbContext) : IRepository<T, TI
 
     public async Task UpdateAsync(T entity)
     {
-        T exist = await dbContext.Set<T>().FindAsync(entity.Id) ?? throw new EntityNotFoundException($"Entity not found", "NOT_FOUND");
-        dbContext.Entry(exist).CurrentValues.SetValues(entity);
-        
+        ArgumentNullException.ThrowIfNull(entity, nameof(entity));
+
+        var set = dbContext.Set<T>();
+ 
+        var trackedEntity = dbContext
+            .ChangeTracker
+            .Entries<T>()
+            .FirstOrDefault(e => e.Entity.Id.Equals(entity.Id));
+
+        // if is already tracked
+        if (trackedEntity is not null)
+        {
+            trackedEntity.CurrentValues.SetValues(entity);
+            return;
+        }
+
+        // not tracked, then search
+        var existingEntity = await set.FindAsync(entity.Id);
+
+        if (existingEntity is not null)
+        {
+            // found. then update
+            dbContext.Entry(existingEntity).CurrentValues.SetValues(entity);
+        }
+        else
+        {
+            throw new EntityNotFoundException("Entity not found", "NOT_FOUND");
+        }
     }
 }

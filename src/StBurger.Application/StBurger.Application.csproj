@@ -1,5 +1,5 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
+  
   <ItemGroup>
     <ProjectReference Include="..\StBurger.Domain\StBurger.Domain.csproj" />
   </ItemGroup>
@@ -8,10 +8,6 @@
     <PackageReference Include="FluentValidation" Version="12.1.1" />
     <PackageReference Include="MediatR" Version="12.5.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.6" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Order\Validators\" />
   </ItemGroup>
 
   <PropertyGroup>

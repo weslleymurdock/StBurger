@@ -1,6 +1,4 @@
-﻿using FluentValidation;
-using StBurger.Infrastructure.Handlers;
-using StBurger.Infrastructure.Services;
+﻿using StBurger.Infrastructure.Decorators;
 
 namespace StBurger.Composition.Extensions;
 
@@ -42,12 +40,22 @@ public static class ServiceCollectionExtensions
             services.AddScoped<IDbManager, DbManager>();
             services.AddScoped(typeof(IRepository<,>), typeof(Repository<,>));
             services.AddScoped(typeof(IUnitOfWork<>), typeof(UnitOfWork<>));
+            services.AddScoped<IOrderReadOnlyRepository, OrderReadOnlyRepository>();
             services.AddScoped<IMenuService, MenuService>();
             services.AddScoped<IOrderService, OrderService>();
-
+            services.Scan(scan => scan
+    .FromAssembliesOf(typeof(IMenuService), typeof(IOrderService))
+    .AddClasses(classes => classes
+        .Where(t => t.Name.EndsWith("Service")))
+    .AsImplementedInterfaces()
+    .WithScopedLifetime());
+            services.Decorate<IMenuService, MenuServiceLoggingDecorator>();
+            services.Decorate<IOrderService, OrderServiceLoggingDecorator>();
             services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<Application.Menu.Commands.CreateMenuItemCommand>());
             services.AddValidatorsFromAssemblyContaining<Application.Menu.Validators.CreateMenuItemCommandValidator>();
-
+            services.AddTransient(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>));
+            services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
+            services.AddTransient(typeof(IPipelineBehavior<,>), typeof(TransactionBehavior<,>));
             return services;
         }
     }

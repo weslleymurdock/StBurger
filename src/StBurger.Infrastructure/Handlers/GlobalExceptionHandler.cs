@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Hosting;
 using StBurger.Application.Core.Responses;
 using StBurger.Domain.Core.Exceptions;
 using System.Net;
@@ -13,7 +14,8 @@ namespace StBurger.Infrastructure.Handlers;
 
 public sealed class GlobalExceptionHandler(
     ILogger<GlobalExceptionHandler> logger,
-    IProblemDetailsService problemDetailsService
+    IProblemDetailsService problemDetailsService,
+    IHostEnvironment env
 ) : IExceptionHandler
 {
     public async ValueTask<bool> TryHandleAsync(
@@ -28,7 +30,10 @@ public sealed class GlobalExceptionHandler(
             ArgumentNullException => (StatusCodes.Status400BadRequest, exception.Message),
             ArgumentException => (StatusCodes.Status400BadRequest, exception.Message),
             InvalidCastException => (StatusCodes.Status400BadRequest, exception.Message),
-            ValidationException => (StatusCodes.Status422UnprocessableEntity, exception.Message),
+            ValidationException e=> (StatusCodes.Status422UnprocessableEntity, 
+                exception.InnerException is not null ? (exception.InnerException is ValidationException ex ? 
+                string.Join(Environment.NewLine, ex.Errors.Select(x => x.ErrorMessage)) : 
+                exception.InnerException?.Message) : string.Join(Environment.NewLine, e.Errors.Select(x => x.ErrorMessage))),
             KeyNotFoundException => (StatusCodes.Status404NotFound, exception.Message),
             ResourceGoneException => (StatusCodes.Status410Gone, exception.Message),
             TimeoutException => (StatusCodes.Status408RequestTimeout, exception.Message),
@@ -59,27 +64,31 @@ public sealed class GlobalExceptionHandler(
             Instance = context.Request.Path
         };
 
+        problem.Extensions.Add("exceptionMessage", exception.Message);
+
+        if (env.IsDevelopment())
+        {
+            // Dados sensíveis apenas para o desenvolvedor
+            problem.Extensions.Add("stackTrace", exception.StackTrace);
+
+            if (exception.InnerException is not null)
+            {
+                problem.Extensions.Add("innerException", exception.InnerException.Message);
+            }
+        }
+
         context.Response.StatusCode = status;
 
         await problemDetailsService.WriteAsync(new ProblemDetailsContext
         {
             HttpContext = context,
-            ProblemDetails = problem
+            ProblemDetails = problem,
+            Exception = exception
         });
 
         return true;
     }
-
-    private static bool IsUniqueConstraintViolation(DbUpdateException ex)
-    {
-        if (ex.InnerException is SqlException sqlEx)
-        {
-            return sqlEx.Number is 2601 or 2627;
-        }
-
-        return false;
-    }
-
+     
     private static string? ExtractDuplicateValue(string message)
     {
         var match = Regex.Match(message, @"\((.*?)\)");
